@@ -5,6 +5,8 @@ open FSharp.Data
 
 type TranslationLines = CsvProvider<"example_input.csv">
 
+
+// Extracting path elements
 exception EndGroupNotFoundError of string
 exception PathSeparatorNotFoundError of string
 
@@ -35,6 +37,9 @@ let rec path_elements (pstr: string) : string list =
         match p with
         | (cur, rest) -> cur :: (path_elements rest)
 
+// The objects to generate
+type trans_obj = SingleTranslation of string * string | TranslationGroup of trans_obj list
+
 [<EntryPoint>]
 let entry args =
     if args.Length < 2 then
@@ -44,6 +49,10 @@ let entry args =
         let outputDir = args.[1]
         let lines = TranslationLines.Load(inputCsv)
         lines.Data
-        |> Seq.iter (fun l ->
-                     printfn "%s" (path_elements l.TranslationPath |> String.concat ","))
+        |> Seq.groupBy (fun l -> l.FilePath)
+        |> Seq.iter (fun fg ->
+                     printfn "File name: %s" (fst fg)
+                     (snd fg)
+                     |> Seq.iter (fun l ->
+                                  printfn "%s" (path_elements l.TranslationPath |> String.concat ",")))
     0
