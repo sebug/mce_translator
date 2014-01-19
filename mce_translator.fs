@@ -38,7 +38,17 @@ let rec path_elements (pstr: string) : string list =
         | (cur, rest) -> cur :: (path_elements rest)
 
 // The objects to generate
-type trans_obj = SingleTranslation of string * string | TranslationGroup of trans_obj list
+type trans_obj = SingleTranslation of string * string | TranslationGroup of string * (trans_obj list)
+
+// the zipper (see filesystem zipper example in http://learnyouahaskell.com/zippers#a-very-simple-file-system )
+
+type tocrumb = TOCrumb of string * (trans_obj list) * (trans_obj list)
+
+type tozipper = trans_obj * (tocrumb list)
+
+let to_up (z: tozipper) : tozipper =
+    match z with
+    | (item,TOCrumb(name,ls,rs) :: bs) -> (TranslationGroup(name,ls @ [item] @ rs), bs)
 
 [<EntryPoint>]
 let entry args =
