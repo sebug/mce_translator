@@ -1,0 +1,5 @@
+File Path,Translation Path,English,Translated
+tiny_mce\langs\en.js,en.common.more_colors,More Colors...,Mehr Farben...
+tiny_mce\langs\en.js,en.common.invalid_data,"Error: Invalid values entered, these are marked in red.","Fehler: Inkorrekte Werte eingegeben, diese sind rot markiert."
+tiny_mce\langs\en.js,en.print.print_desc,Print,Drucken
+tiny_mce\themes\advanced\langs\en.js,[en.advanced].underline_desc,Underline (Ctrl + U),Unterstrichen (Ctrl + U)
