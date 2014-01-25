@@ -44,12 +44,21 @@ let rec path_elements (pstr: string) : TranslationPath =
 type BaseValue = string
 type Translation = string
         
-type trans_obj = SingleTranslation of PathElement * Translation | TranslationGroup of PathElement * (trans_obj list)
+type trans_obj = SingleTranslation of PathElement * Translation | TranslationGroup of PathElement * (trans_obj seq)
 
 // Intermediary representation
 type TranslationLine = TranslationLine of TranslationPath * BaseValue * Translation
 
-let translation_tree (lines: TranslationLine seq): trans_obj seq =
+exception CantDropHeadException of string
+
+let drop_head (lines: TranslationLine seq): TranslationLine seq =
+    lines
+    |> Seq.map (fun l ->
+                match l with
+                | TranslationLine(_ :: rest,e,bt) -> TranslationLine(rest,e,bt)
+                | TranslationLine([],e,bt) -> raise (CantDropHeadException("Can't drop head of empty path")))
+
+let rec translation_tree (lines: TranslationLine seq): trans_obj seq =
     let base_elements =
         lines
         |> Seq.filter (fun l ->
@@ -60,7 +69,19 @@ let translation_tree (lines: TranslationLine seq): trans_obj seq =
                     match l with
                     | TranslationLine([pel],_,trans) -> Some(SingleTranslation(pel,trans))
                     | _ -> None )
-    base_elements
+    let step =
+        lines
+        |> Seq.groupBy (fun l ->
+                        match l with
+                        | TranslationLine(f :: s :: _,_,_) -> Some(f)
+                        | TranslationLine([one],_,_) -> None
+                        | TranslationLine([],_,_) -> None)
+        |> Seq.map (fun lg ->
+                    match lg with
+                    | (None,_) -> None
+                    | (Some(pe),itms) -> Some(TranslationGroup(pe,drop_head itms |> translation_tree)))
+    let combined = Seq.append base_elements step
+    combined
     |> Seq.fold (fun acc elem ->
                  match elem with
                  | Some(e) -> Seq.append acc (Seq.singleton e)
