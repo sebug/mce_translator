@@ -3,7 +3,10 @@ MCE Translator
 This projects aims to provide an easy way to put new translations into
 TinyMCE from a simple tabular format.
 
-It also serves for me to explore some ideas linked to zippers ( http://en.wikipedia.org/wiki/Zipper_(data_structure) ).
+<del>It also serves for me to explore some ideas linked to zippers ( http://en.wikipedia.org/wiki/Zipper_(data_structure) ).</del>
+
+Forget that, they are actually not the right tool for the job. Simple recursion
+is better adapted.
 
 To read the CSV input, it uses [FSharp.Data](http://fsharp.github.io/FSharp.Data/). It can be installed using NuGet ([See the instructions for MacOS X nuget use](http://orientman.wordpress.com/2012/12/29/for-the-record-how-to-run-nuget-exe-on-os-x-mountain-lion/)).
 

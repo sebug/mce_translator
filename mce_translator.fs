@@ -30,7 +30,10 @@ let rec path_element (pstr: string) (acc: string) : string * string =
                             else raise (PathSeparatorNotFoundError("Did not find ."))
         | c -> path_element (pstr.Substring(1)) (acc + c.ToString())
 
-let rec path_elements (pstr: string) : string list =
+type PathElement = string
+type TranslationPath = PathElement list
+
+let rec path_elements (pstr: string) : TranslationPath =
     if pstr = "" then []
     else
         let p = path_element pstr ""
@@ -38,17 +41,13 @@ let rec path_elements (pstr: string) : string list =
         | (cur, rest) -> cur :: (path_elements rest)
 
 // The objects to generate
-type trans_obj = SingleTranslation of string * string | TranslationGroup of string * (trans_obj list)
+type BaseValue = string
+type Translation = string
+        
+type trans_obj = SingleTranslation of PathElement * Translation | TranslationGroup of PathElement * (trans_obj list)
 
-// the zipper (see filesystem zipper example in http://learnyouahaskell.com/zippers#a-very-simple-file-system )
-
-type tocrumb = TOCrumb of string * (trans_obj list) * (trans_obj list)
-
-type tozipper = trans_obj * (tocrumb list)
-
-let to_up (z: tozipper) : tozipper =
-    match z with
-    | (item,TOCrumb(name,ls,rs) :: bs) -> (TranslationGroup(name,ls @ [item] @ rs), bs)
+// Intermediary representation
+type TranslationLine = TranslationLine of TranslationPath * BaseValue * Translation
 
 [<EntryPoint>]
 let entry args =
