@@ -50,7 +50,22 @@ type trans_obj = SingleTranslation of PathElement * Translation | TranslationGro
 type TranslationLine = TranslationLine of TranslationPath * BaseValue * Translation
 
 let translation_tree (lines: TranslationLine seq): trans_obj seq =
-    Seq.empty
+    let base_elements =
+        lines
+        |> Seq.filter (fun l ->
+                       match l with
+                       | TranslationLine([pel],_,_) -> true
+                       | _ -> false)
+        |> Seq.map (fun l ->
+                    match l with
+                    | TranslationLine([pel],_,trans) -> Some(SingleTranslation(pel,trans))
+                    | _ -> None )
+    base_elements
+    |> Seq.fold (fun acc elem ->
+                 match elem with
+                 | Some(e) -> Seq.append acc (Seq.singleton e)
+                 | None -> Seq.empty) Seq.empty
+                 
 
 let tl_from_input (l: TranslationLines.Row): TranslationLine =
     let path = path_elements l.TranslationPath
