@@ -61,10 +61,6 @@ let drop_head (lines: TranslationLine seq): TranslationLine seq =
 let rec translation_tree (lines: TranslationLine seq): trans_obj seq =
     let base_elements =
         lines
-        |> Seq.filter (fun l ->
-                       match l with
-                       | TranslationLine([pel],_,_) -> true
-                       | _ -> false)
         |> Seq.map (fun l ->
                     match l with
                     | TranslationLine([pel],_,trans) -> Some(SingleTranslation(pel,trans))
@@ -80,12 +76,27 @@ let rec translation_tree (lines: TranslationLine seq): trans_obj seq =
                     match lg with
                     | (None,_) -> None
                     | (Some(pe),itms) -> Some(TranslationGroup(pe,drop_head itms |> translation_tree)))
-    let combined = Seq.append base_elements step
-    combined
+    Seq.append base_elements step
     |> Seq.fold (fun acc elem ->
                  match elem with
                  | Some(e) -> Seq.append acc (Seq.singleton e)
-                 | None -> Seq.empty) Seq.empty
+                 | None -> acc) Seq.empty
+
+let nl = System.Environment.NewLine
+
+let ind (indent: int) = String.replicate indent " "
+
+let rec print (indent: int) (items: trans_obj seq) : string =
+    (ind indent) + "{" + nl +
+    (items
+     |> Seq.map (fun obj ->
+                match obj with
+                | SingleTranslation(pel,trans) -> "\"" + pel + "\": \"" + trans + "\""
+                | TranslationGroup(pel,itms) ->
+                   let subobj = print (indent + 4) itms
+                   "\"" + pel + "\":" + nl + subobj)
+     |> Seq.map (fun l -> (ind (indent + 4)) + l)
+     |> String.concat ("," + nl)) + nl + (ind indent) + "}"
                  
 
 let tl_from_input (l: TranslationLines.Row): TranslationLine =
@@ -104,8 +115,9 @@ let entry args =
         |> Seq.groupBy (fun l -> l.FilePath)
         |> Seq.iter (fun fg ->
                      printfn "File name: %s" (fst fg)
-                     let tls = (snd fg) |> Seq.map tl_from_input
-                     let res = translation_tree tls
-                     res
-                     |> Seq.iter (fun tobj -> printfn "%s" (tobj.ToString())))
+                     (snd fg)
+                     |> Seq.map tl_from_input
+                     |> translation_tree
+                     |> print 0
+                     |> printfn "%s")
     0
