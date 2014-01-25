@@ -49,6 +49,13 @@ type trans_obj = SingleTranslation of PathElement * Translation | TranslationGro
 // Intermediary representation
 type TranslationLine = TranslationLine of TranslationPath * BaseValue * Translation
 
+let translation_tree (lines: TranslationLine seq): trans_obj seq =
+    Seq.empty
+
+let tl_from_input (l: TranslationLines.Row): TranslationLine =
+    let path = path_elements l.TranslationPath
+    TranslationLine(path,l.English,l.Translated)
+
 [<EntryPoint>]
 let entry args =
     if args.Length < 2 then
@@ -61,7 +68,8 @@ let entry args =
         |> Seq.groupBy (fun l -> l.FilePath)
         |> Seq.iter (fun fg ->
                      printfn "File name: %s" (fst fg)
-                     (snd fg)
-                     |> Seq.iter (fun l ->
-                                  printfn "%s" (path_elements l.TranslationPath |> String.concat ",")))
+                     let tls = (snd fg) |> Seq.map tl_from_input
+                     let res = translation_tree tls
+                     res
+                     |> Seq.iter (fun tobj -> printfn "%s" (tobj.ToString())))
     0
