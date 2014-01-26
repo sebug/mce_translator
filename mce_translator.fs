@@ -110,8 +110,7 @@ let is_main (p: string) =
 
 exception UnexpectedFormatException of string
 
-let write_file (filename: string) (lines: TranslationLines.Row seq) =
-    printfn "File name: %s" filename
+let write_file (bp: string) (filename: string) (lines: TranslationLines.Row seq) =
     let tobjs =
         lines
         |> Seq.map tl_from_input
@@ -125,7 +124,10 @@ let write_file (filename: string) (lines: TranslationLines.Row seq) =
                 sprintf "%s('%s',%s);" functionCall pel (print 0 0 "" itms)
             | SingleTranslation(pel,trans) ->
                 raise (UnexpectedFormatException("Expected translation group"))
-    printfn "%s" file_content
+    let fullpath = System.IO.Path.Combine(bp,filename.Replace('\\','/'))
+    let finfo = new System.IO.FileInfo(fullpath)
+    finfo.Directory.Create();
+    System.IO.File.WriteAllText(fullpath, file_content,System.Text.Encoding.UTF8)
     
 
 [<EntryPoint>]
@@ -138,5 +140,5 @@ let entry args =
         let lines = TranslationLines.Load(inputCsv)
         lines.Data
         |> Seq.groupBy (fun l -> l.FilePath)
-        |> Seq.iter (fun fg -> write_file (fst fg) (snd fg))
+        |> Seq.iter (fun fg -> write_file outputDir (fst fg) (snd fg))
     0
