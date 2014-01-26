@@ -82,18 +82,16 @@ let rec translation_tree (lines: TranslationLine seq): trans_obj seq =
                  | Some(e) -> Seq.append acc (Seq.singleton e)
                  | None -> acc) Seq.empty
 
-let nl = System.Environment.NewLine
-
 let ind (indent: int) = String.replicate indent " "
 
-let rec print (offset: int) (indent: int) (items: trans_obj seq) : string =
+let rec print (offset: int) (indent: int) (nl: string) (items: trans_obj seq) : string =
     (ind indent) + "{" + nl +
     (items
      |> Seq.map (fun obj ->
                 match obj with
                 | SingleTranslation(pel,trans) -> "\"" + pel + "\": \"" + trans + "\""
                 | TranslationGroup(pel,itms) ->
-                   let subobj = print offset (indent + offset) itms
+                   let subobj = print offset (indent + offset) nl itms
                    "\"" + pel + "\":" + nl + subobj)
      |> Seq.map (fun l -> (ind (indent + offset)) + l)
      |> String.concat ("," + nl)) + nl + (ind indent) + "}"
@@ -110,13 +108,24 @@ let functionCall = "tinyMCE.addI18n"
 let is_main (p: string) =
     p = "tiny_mce\langs\en.js"
 
+exception UnexpectedFormatException of string
+
 let write_file (filename: string) (lines: TranslationLines.Row seq) =
     printfn "File name: %s" filename
-    lines
-    |> Seq.map tl_from_input
-    |> translation_tree
-    |> print 4 0
-    |> printfn "%s"
+    let tobjs =
+        lines
+        |> Seq.map tl_from_input
+        |> translation_tree
+    let file_content =
+        if is_main filename then
+            sprintf "%s(%s);" functionCall  (print 0 0 "" tobjs)
+        else
+            match (Seq.head tobjs) with
+            | TranslationGroup(pel,itms) ->
+                sprintf "%s('%s',%s);" functionCall pel (print 0 0 "" itms)
+            | SingleTranslation(pel,trans) ->
+                raise (UnexpectedFormatException("Expected translation group"))
+    printfn "%s" file_content
     
 
 [<EntryPoint>]
