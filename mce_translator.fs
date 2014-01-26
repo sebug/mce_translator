@@ -86,22 +86,38 @@ let nl = System.Environment.NewLine
 
 let ind (indent: int) = String.replicate indent " "
 
-let rec print (indent: int) (items: trans_obj seq) : string =
+let rec print (offset: int) (indent: int) (items: trans_obj seq) : string =
     (ind indent) + "{" + nl +
     (items
      |> Seq.map (fun obj ->
                 match obj with
                 | SingleTranslation(pel,trans) -> "\"" + pel + "\": \"" + trans + "\""
                 | TranslationGroup(pel,itms) ->
-                   let subobj = print (indent + 4) itms
+                   let subobj = print offset (indent + offset) itms
                    "\"" + pel + "\":" + nl + subobj)
-     |> Seq.map (fun l -> (ind (indent + 4)) + l)
+     |> Seq.map (fun l -> (ind (indent + offset)) + l)
      |> String.concat ("," + nl)) + nl + (ind indent) + "}"
                  
 
 let tl_from_input (l: TranslationLines.Row): TranslationLine =
     let path = path_elements l.TranslationPath
     TranslationLine(path,l.English,l.Translated)
+
+// the translation call
+let functionCall = "tinyMCE.addI18n"
+
+// the main call is different in format from the rest
+let is_main (p: string) =
+    p = "tiny_mce\langs\en.js"
+
+let write_file (filename: string) (lines: TranslationLines.Row seq) =
+    printfn "File name: %s" filename
+    lines
+    |> Seq.map tl_from_input
+    |> translation_tree
+    |> print 4 0
+    |> printfn "%s"
+    
 
 [<EntryPoint>]
 let entry args =
@@ -113,11 +129,5 @@ let entry args =
         let lines = TranslationLines.Load(inputCsv)
         lines.Data
         |> Seq.groupBy (fun l -> l.FilePath)
-        |> Seq.iter (fun fg ->
-                     printfn "File name: %s" (fst fg)
-                     (snd fg)
-                     |> Seq.map tl_from_input
-                     |> translation_tree
-                     |> print 0
-                     |> printfn "%s")
+        |> Seq.iter (fun fg -> write_file (fst fg) (snd fg))
     0
